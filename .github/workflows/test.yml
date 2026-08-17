@@ -1,0 +1,11 @@
+﻿name: Test
+'on': [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: curl -X POST 'https://api.telegram.org/bot8903144301:AAE-vWXxGfbG_b9oiDcDjnQyfVLX9f5YaEo/sendMessage' -d 'chat_id=@vkusno_test_kitchen&text=Привет из GitHub Actions!'
