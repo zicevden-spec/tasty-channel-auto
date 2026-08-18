@@ -3,7 +3,7 @@ from datetime import date, datetime
 from countries import COUNTRIES
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
-CHANNEL = "@vkusno_test_kitchen"
+CHANNEL = "@recepty_i_istoriya"
 STYLE = ", professional food photography, soft natural window light, shallow depth of field, rustic wooden table, vibrant appetizing colors, ultra realistic, magazine quality, no text, no watermark"
 
 now = datetime.utcnow()
