@@ -13,11 +13,23 @@ prompt = 'Страна сегодняшнего поста: ' + country + '. В�
 
 key = os.environ.get("GROQ_API_KEY")
 headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
-r = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json={"model": "groq/compound-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.9, "max_tokens": 4000})
-print("Groq:", r.status_code)
 
-content = r.json()["choices"][0]["message"]["content"]
-print("Content:", content[:200])
+content = ""
+for model in ["groq/compound-mini", "groq/compound", "llama-3.1-8b-instant"]:
+    for attempt in range(2):
+        r = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json={"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.9, "max_tokens": 4000})
+        print(f"Try {model} attempt {attempt+1}:", r.status_code)
+        if r.status_code == 200:
+            content = r.json()["choices"][0]["message"]["content"] or ""
+            print("Content[:150]:", content[:150])
+            if "{" in content and "}" in content:
+                break
+    if content and "{" in content:
+        break
+
+if not content or "{" not in content:
+    print("FAILED: no valid JSON from any model, skipping today")
+    exit(0)
 
 data = json.loads(content[content.find("{"):content.rfind("}") + 1])
 post = data["post"]
@@ -31,7 +43,7 @@ UA = {"User-Agent": "TastyChannelAuto/1.0 (recipe channel bot)"}
 def get_wiki_image(title):
     try:
         s = requests.get("https://en.wikipedia.org/api/rest_v1/page/summary/" + requests.utils.quote(title), headers=UA)
-        print("Wiki summary:", s.status_code, title)
+        print("Wiki:", s.status_code, title)
         if s.status_code == 200:
             wj = s.json()
             img = wj.get("originalimage", {}).get("source")
@@ -52,7 +64,6 @@ if not image:
     try:
         s = requests.get("https://en.wikipedia.org/w/api.php", params={"action": "opensearch", "search": q, "limit": 1, "format": "json"}, headers=UA)
         titles = s.json()[1]
-        print("OpenSearch:", titles)
         if titles:
             image = get_wiki_image(titles[0])
     except Exception as e:
