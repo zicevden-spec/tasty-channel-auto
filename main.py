@@ -20,19 +20,35 @@ if len(post) > 1020:
     post = post[:post.rfind("\n")] + "\n..."
 print("Length:", len(post))
 
+def get_wiki_image(title):
+    try:
+        s = requests.get("https://en.wikipedia.org/api/rest_v1/page/summary/" + requests.utils.quote(title))
+        print("Wiki summary:", s.status_code, title)
+        if s.status_code == 200:
+            wj = s.json()
+            img = wj.get("originalimage", {}).get("source")
+            if not img and wj.get("thumbnail", {}).get("source"):
+                img = wj["thumbnail"]["source"].replace("/320px-", "/800px-")
+            return img
+    except Exception as e:
+        print("Wiki error:", e)
+    return None
+
 image = None
 wiki = data.get("wiki", "")
 if wiki:
+    image = get_wiki_image(wiki)
+if not image:
+    q = data["image_prompt"].split(",")[0].strip()
+    print("Search query:", q)
     try:
-        w = requests.get("https://en.wikipedia.org/api/rest_v1/page/summary/" + requests.utils.quote(wiki))
-        print("Wiki:", w.status_code, wiki)
-        if w.status_code == 200:
-            wj = w.json()
-            image = wj.get("originalimage", {}).get("source")
-            if not image and wj.get("thumbnail", {}).get("source"):
-                image = wj["thumbnail"]["source"].replace("/320px-", "/800px-")
+        s = requests.get("https://en.wikipedia.org/w/api.php", params={"action": "opensearch", "search": q, "limit": 1, "format": "json"})
+        titles = s.json()[1]
+        print("OpenSearch:", titles)
+        if titles:
+            image = get_wiki_image(titles[0])
     except Exception as e:
-        print("Wiki error:", e)
+        print("Search error:", e)
 if not image:
     print("Fallback to Pollinations")
     image = "https://image.pollinations.ai/prompt/" + requests.utils.quote(data["image_prompt"]) + "?model=flux&width=1280&height=800&nologo=true"
