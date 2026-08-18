@@ -1,9 +1,15 @@
 ﻿import os, json, requests
+from datetime import date
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL = "@vkusno_test_kitchen"
 
-prompt = 'Выбери случайную страну (Россия, Китай, Грузия, Италия, Япония, Таиланд, Индия, Мексика, Греция, Узбекистан, Франция, Испания, Турция, Корея) и её известное блюдо. Верни СТРОГО JSON. Поле "post": текст ТОЛЬКО НА РУССКОМ, СТРОГО по шаблону, каждая строка с новой строки, пустая строка между блоками, максимум 950 символов:\n[флаг] [страна] — [аппетитное название блюда]\n⏱️ Время: X мин\n👥 Порции: X\n🔥 Калории: X ккал\n\n🧂 Ингредиенты:\n- ингредиент — точный вес\n(каждый с новой строки, 6-10 позиций)\n\n🔪 Шаги:\n1. подробный шаг: действие, время, огонь, признак готовности\n(6-7 шагов, каждый с новой строки)\n\n🔐 Секрет: совет хозяйки\n\n📜 История: 2-3 предложения истории блюда\n\n#хештег #хештег\nЕсли выходит длиннее 950 символов - убери блоки История и Секрет, но сохрани ингредиенты и шаги. Поле "wiki": exact English Wikipedia article title for this dish (examples: Borscht, Sushi, Khinkali, Carbonara, Pad thai). Поле "image_prompt" (на английском): START with the exact english dish name; then list KEY VISUAL IDENTIFIERS so the dish is instantly recognizable: exact colors, shape, signature elements (example: borscht = deep red beet broth with sour cream swirl and dill; sushi = rice rolled in nori with fish on top); then traditional plating, garnish, sauce, tableware; close-up of the dish.'
+COUNTRIES = ["Россия", "Китай", "Грузия", "Италия", "Япония", "Таиланд", "Индия", "Мексика", "Греция", "Узбекистан", "Франция", "Испания", "Турция", "Корея"]
+day = (date.today() - date(2026, 1, 1)).days
+country = COUNTRIES[day % len(COUNTRIES)]
+print("Country of the day:", country)
+
+prompt = 'Страна сегодняшнего поста: ' + country + '. Выбери её известное блюдо. Верни СТРОГО JSON. Поле "post": текст ТОЛЬКО НА РУССКОМ, СТРОГО по шаблону, каждая строка с новой строки, пустая строка между блоками, максимум 950 символов:\n[флаг] [страна] — [аппетитное название блюда]\n⏱️ Время: X мин\n👥 Порции: X\n🔥 Калории: X ккал\n\n🧂 Ингредиенты:\n- ингредиент — точный вес\n(каждый с новой строки, 6-10 позиций)\n\n🔪 Шаги:\n1. подробный шаг: действие, время, огонь, признак готовности\n(6-7 шагов, каждый с новой строки)\n\n🔐 Секрет: совет хозяйки\n\n📜 История: 2-3 предложения истории блюда\n\n#хештег #хештег\nЕсли выходит длиннее 950 символов - убери блоки История и Секрет, но сохрани ингредиенты и шаги. Поле "wiki": exact English Wikipedia article title for this dish (examples: Borscht, Sushi, Khinkali, Carbonara, Pad thai). Поле "image_prompt" (на английском): START with the exact english dish name; then KEY VISUAL IDENTIFIERS: exact colors, shape, signature elements; then traditional plating, garnish, sauce, tableware; close-up of the dish.'
 
 key = os.environ.get("GROQ_API_KEY")
 headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
@@ -20,9 +26,11 @@ if len(post) > 1020:
     post = post[:post.rfind("\n")] + "\n..."
 print("Length:", len(post))
 
+UA = {"User-Agent": "TastyChannelAuto/1.0 (recipe channel bot)"}
+
 def get_wiki_image(title):
     try:
-        s = requests.get("https://en.wikipedia.org/api/rest_v1/page/summary/" + requests.utils.quote(title))
+        s = requests.get("https://en.wikipedia.org/api/rest_v1/page/summary/" + requests.utils.quote(title), headers=UA)
         print("Wiki summary:", s.status_code, title)
         if s.status_code == 200:
             wj = s.json()
@@ -39,10 +47,10 @@ wiki = data.get("wiki", "")
 if wiki:
     image = get_wiki_image(wiki)
 if not image:
-    q = data["image_prompt"].split(",")[0].strip()
+    q = data["image_prompt"].split(":")[0].split(",")[0].strip()
     print("Search query:", q)
     try:
-        s = requests.get("https://en.wikipedia.org/w/api.php", params={"action": "opensearch", "search": q, "limit": 1, "format": "json"})
+        s = requests.get("https://en.wikipedia.org/w/api.php", params={"action": "opensearch", "search": q, "limit": 1, "format": "json"}, headers=UA)
         titles = s.json()[1]
         print("OpenSearch:", titles)
         if titles:
