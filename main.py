@@ -70,7 +70,11 @@ else:
     if wiki:
         image = get_wiki_image(wiki)
     if not image:
-        q = data["image_prompt"].split(":")[0].split(",")[0].strip()
+        img_prompt = data.get("image_prompt", "")
+        if not img_prompt:
+            q = data.get("wiki", "").split("/")[-1].replace("_", " ")
+        else:
+            q = img_prompt.split(":")[0].split(",")[0].strip()
         print("Search query:", q)
         try:
             s = requests.get("https://en.wikipedia.org/w/api.php", params={"action": "opensearch", "search": q, "limit": 1, "format": "json"}, headers=UA)
@@ -81,7 +85,8 @@ else:
             print("Search error:", e)
     if not image:
         print("Fallback to Pollinations")
-        image = "https://image.pollinations.ai/prompt/" + requests.utils.quote(data["image_prompt"] + STYLE) + "?model=flux&width=1280&height=800&nologo=true"
+        fallback_prompt = data.get("image_prompt", data.get("wiki", cuisine))
+        image = "https://image.pollinations.ai/prompt/" + requests.utils.quote(fallback_prompt + STYLE) + "?model=flux&width=1280&height=800&nologo=true"
 print("Image:", image[:100])
 
 r2 = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto", data={"chat_id": CHANNEL, "caption": post, "photo": image})
