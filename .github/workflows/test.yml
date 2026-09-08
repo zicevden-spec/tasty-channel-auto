@@ -2,7 +2,8 @@ name: Auto Post
 
 on:
   schedule:
-    - cron: '0 9,15 * * *'
+    - cron: '0 9 * * *'
+    - cron: '0 15 * * *'
   workflow_dispatch:
 
 jobs:
@@ -18,3 +19,4 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SCHEDULE: ${{ github.event.schedule }}

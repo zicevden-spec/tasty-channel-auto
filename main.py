@@ -1,4 +1,4 @@
-﻿import os, json, requests
+import os, json, requests
 from datetime import date, datetime
 from countries import COUNTRIES
 
@@ -9,7 +9,13 @@ STYLE = ", professional food photography, soft natural window light, shallow dep
 now = datetime.utcnow()
 days = (now.date() - date(2026, 1, 1)).days
 ru, en, cuisine = COUNTRIES[days % len(COUNTRIES)]
-evening = now.hour >= 12
+sched = os.environ.get("SCHEDULE", "")
+if sched == "0 9 * * *":
+    evening = False
+elif sched == "0 15 * * *":
+    evening = True
+else:
+    evening = now.hour >= 12
 print("Country:", ru, "| evening slot:", evening)
 
 if evening:
